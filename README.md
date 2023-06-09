@@ -3,9 +3,15 @@ This repo will be updated with password dumpers for various software, all genera
 
 This will be eventually a penetration testing repo. Keep in mind that every single line of these files are setting antiviruses and traffic monitoring software on fire. To use them in a real-world pentest scenario, you probably need to heavily obfuscate and/or encrypt the sources.
 
-DO NOT ask for obfuscation/encrypting methods. Except it's out of scope of this repo, I assume you have the knowledge to do it if you're a real pentester.
+DO NOT ask for obfuscation/encryption methods. Except it's out of scope of this repo, I assume you have the knowledge to do it if you're a real pentester.
 
 *Only WINDOWS related software will be added.*
 
 ## The road so far
-This script will attempt to extract data from Chrome, Edge, Opera, Brave, and Vivaldi, storing them into separate folders for each browser.
+This script will attempt to extract data from...
+- Chrome
+- Edge
+- Opera
+- Brave
+- Vivaldi
+...storing them into separate folders for each browser.
