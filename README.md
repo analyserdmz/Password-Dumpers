@@ -7,5 +7,5 @@ DO NOT ask for obfuscation/encrypting methods. Except it's out of scope of this 
 
 *Only WINDOWS related software will be added.*
 
-## Included so far
-1) Google Chrome (Tested on Windows 11)
+## The road so far
+This script will attempt to extract data from Chrome, Edge, Opera, Brave, and Vivaldi, storing them into separate folders for each browser.
