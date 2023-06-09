@@ -14,4 +14,5 @@ This script will attempt to extract data from...
 - Opera
 - Brave
 - Vivaldi
+
 ...storing them into separate folders for each browser.
